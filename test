@@ -1,19 +1,12 @@
-import random
+import tkinter as tk
 
-print("=== GUESS THE NUMBER ===")
-print("I'm thinking of a number from 1 to 20.")
+window = tk.Tk()
+window.title("My First Game")
 
-secret_number = random.randint(1, 20)
-attempts = 0
+canvas = tk.Canvas(window, width=500, height=500)
+canvas.pack()
 
-while True:
-    guess = int(input("Your guess: "))
-    attempts += 1
+# Make a small blue square
+player = canvas.create_rectangle(100, 100, 110, 110, fill="blue")
 
-    if guess < secret_number:
-        print("Too low! Try again.")
-    elif guess > secret_number:
-        print("Too high! Try again.")
-    else:
-        print(f"You got it! It took you {attempts} guesses.")
-        break
+window.mainloop()
