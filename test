@@ -4,53 +4,123 @@ import random
 window = tk.Tk()
 window.title("Snake Game")
 
-canvas = tk.Canvas(window, width=500, height=500, bg="#9b9b9b")
+WIDTH = 500
+HEIGHT = 500
+SIZE = 20
+
+canvas = tk.Canvas(window, width=WIDTH, height=HEIGHT, bg="#777777")
 canvas.pack()
 
 snake = []
 direction = "Right"
-apple = None
+apples = []
 game_over = False
 
 
 def start_game():
-    global snake, direction, apple, game_over
+    global snake, direction, apples, game_over
 
-    snake = [(250, 250), (240, 250), (230, 250)]
+    snake = [(240, 240), (220, 240), (200, 240)]
     direction = "Right"
+    apples = []
     game_over = False
 
     respawn_button.place_forget()
-    create_apple()
+    canvas.delete("all")
+
+    for _ in range(3):
+        create_apple()
+
     draw()
     move()
 
 
 def create_apple():
-    global apple
+    while True:
+        x = random.randrange(0, WIDTH, SIZE)
+        y = random.randrange(0, HEIGHT, SIZE)
+        position = (x, y)
 
-    apple = (random.randrange(0, 500, 10), random.randrange(0, 500, 10))
-
-    while apple in snake:
-        apple = (random.randrange(0, 500, 10), random.randrange(0, 500, 10))
+        if position not in snake and position not in apples:
+            apples.append(position)
+            break
 
 
 def draw():
     canvas.delete("all")
 
-    # Concrete-like background lines
-    for x in range(0, 500, 50):
-        canvas.create_line(x, 0, x, 500, fill="#8f8f8f")
-    for y in range(0, 500, 50):
-        canvas.create_line(0, y, 500, y, fill="#8f8f8f")
+    # Concrete floor
+    canvas.create_rectangle(
+        0, 0, WIDTH, HEIGHT,
+        fill="#777777",
+        outline=""
+    )
 
-    # Apple
-    apple_x, apple_y = apple
-    canvas.create_oval(apple_x + 1, apple_y + 1, apple_x + 9, apple_y + 9, fill="red", outline="darkred")
+    # Floor tiles
+    for x in range(0, WIDTH, SIZE):
+        canvas.create_line(x, 0, x, HEIGHT, fill="#666666")
+
+    for y in range(0, HEIGHT, SIZE):
+        canvas.create_line(0, y, WIDTH, y, fill="#666666")
+
+    # Concrete details
+    for x in range(25, WIDTH, 70):
+        for y in range(25, HEIGHT, 70):
+            canvas.create_line(x, y, x + 8, y + 3, fill="#858585")
 
     # Snake
-    for x, y in snake:
-        canvas.create_rectangle(x, y, x + 10, y + 10, fill="green", outline="darkgreen")
+    for i, (x, y) in enumerate(snake):
+        if i == 0:
+            canvas.create_rectangle(
+                x + 1, y + 1,
+                x + SIZE - 1, y + SIZE - 1,
+                fill="#32cd32",
+                outline="#0b5e0b"
+            )
+
+            # Eyes
+            canvas.create_oval(x + 3, y + 3, x + 7, y + 7, fill="white", outline="")
+            canvas.create_oval(x + 11, y + 3, x + 15, y + 7, fill="white", outline="")
+        else:
+            canvas.create_rectangle(
+                x + 1, y + 1,
+                x + SIZE - 1, y + SIZE - 1,
+                fill="#228b22",
+                outline="#0b5e0b"
+            )
+
+    # Apples
+    for x, y in apples:
+        canvas.create_oval(
+            x + 1, y + 1,
+            x + SIZE - 1, y + SIZE - 1,
+            fill="red",
+            outline="darkred"
+        )
+
+        # Shine
+        canvas.create_oval(
+            x + 4, y + 4,
+            x + 7, y + 7,
+            fill="white",
+            outline=""
+        )
+
+        # Stem
+        canvas.create_line(
+            x + 10, y + 2,
+            x + 11, y - 3,
+            fill="#4b2e13",
+            width=2
+        )
+
+        # Leaf
+        canvas.create_oval(
+            x + 11, y - 3,
+            x + 17, y + 2,
+            fill="#228b22",
+            outline="#145214"
+        )
 
 
 def move():
@@ -62,26 +132,36 @@ def move():
     head_x, head_y = snake[0]
 
     if direction == "Right":
-        head_x += 10
+        head_x += SIZE
     elif direction == "Left":
-        head_x -= 10
+        head_x -= SIZE
     elif direction == "Up":
-        head_y -= 10
+        head_y -= SIZE
     elif direction == "Down":
-        head_y += 10
+        head_y += SIZE
 
     new_head = (head_x, head_y)
 
-    # Hit the wall or yourself
-    if (head_x < 0 or head_x >= 500 or
-            head_y < 0 or head_y >= 500 or
-            new_head in snake):
+    # Hit the wall
+    if (
+        head_x < 0
+        or head_x >= WIDTH
+        or head_y < 0
+        or head_y >= HEIGHT
+    ):
+        die()
+        return
+
+    # Hit yourself
+    if new_head in snake:
         die()
         return
 
     snake.insert(0, new_head)
 
-    if new_head == apple:
+    # Eat an apple
+    if new_head in apples:
+        apples.remove(new_head)
         create_apple()
     else:
         snake.pop()
@@ -107,17 +187,33 @@ def die():
     global game_over
     game_over = True
 
-    canvas.create_rectangle(130, 190, 370, 310, fill="#555555", outline="white")
-    canvas.create_text(250, 225, text="YOU DIED", fill="white", font=("Arial", 28, "bold"))
-    canvas.create_text(250, 265, text="Press Respawn to play again", fill="white", font=("Arial", 12))
+    canvas.create_rectangle(
+        100, 180, 400, 320,
+        fill="#555555",
+        outline="white"
+    )
+    canvas.create_text(
+        WIDTH / 2, 220,
+        text="YOU DIED!",
+        fill="white",
+        font=("Arial", 30, "bold")
+    )
+    canvas.create_text(
+        WIDTH / 2, 260,
+        text="Press Respawn to play again",
+        fill="white",
+        font=("Arial", 12)
+    )
+    respawn_button.place(x=205, y=280)
 
-    respawn_button.place(x=205, y=285)
 
-
-respawn_button = tk.Button(window, text="Respawn", command=start_game, font=("Arial", 12, "bold"))
+respawn_button = tk.Button(
+    window,
+    text="Respawn",
+    command=start_game,
+    font=("Arial", 12, "bold")
+)
 
 window.bind("<KeyPress>", change_direction)
-
 start_game()
-
 window.mainloop()
